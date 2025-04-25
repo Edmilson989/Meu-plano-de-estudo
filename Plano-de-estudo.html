@@ -1,0 +1,71 @@
+/// ESTRUTURA DO PROJETO COMPLETO
+
+// === backend/server.js === require('dotenv').config(); const express = require('express'); const cors = require('cors'); const mongoose = require('mongoose'); const Plano = require('./models/Plano');
+
+const app = express(); const PORT = process.env.PORT || 3000;
+
+app.use(cors()); app.use(express.json());
+
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true, }).then(() => console.log('MongoDB conectado')) .catch(err => console.error('Erro MongoDB:', err));
+
+app.get('/api/planos', async (req, res) => { const planos = await Plano.find(); res.json(planos); });
+
+app.post('/api/planos', async (req, res) => { const { titulo, topicos } = req.body; const novoPlano = new Plano({ titulo, topicos }); await novoPlano.save(); res.status(201).json(novoPlano); });
+
+app.listen(PORT, () => console.log(Servidor rodando na porta ${PORT}));
+
+// === backend/models/Plano.js === const mongoose = require('mongoose');
+
+const PlanoSchema = new mongoose.Schema({ titulo: String, topicos: [String] });
+
+module.exports = mongoose.model('Plano', PlanoSchema);
+
+// === backend/.env === // Este arquivo NÃO deve ser enviado para o GitHub público MONGODB_URI=coloque_sua_string_do_mongodb_aqui PORT=3000
+
+// === frontend/index.html ===
+
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plano de Estudo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Plano de Estudo</h1>
+    <form id="form-semana">
+      <input type="text" id="tituloSemana" placeholder="Nome da semana" required />
+      <textarea id="topicos" placeholder="Tópicos separados por vírgula" required></textarea>
+      <button type="submit">Adicionar Semana</button>
+    </form>
+    <div id="study-plan"></div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>// === frontend/style.css === body { font-family: Arial, sans-serif; background: #f2f2f2; margin: 0; padding: 0; }
+
+.container { max-width: 800px; margin: auto; padding: 20px; background: white; margin-top: 40px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+
+h1 { text-align: center; color: #333; }
+
+form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+input, textarea { padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; }
+
+button { padding: 10px; background-color: #007BFF; color: white; border: none; border-radius: 6px; cursor: pointer; }
+
+button:hover { background-color: #0056b3; }
+
+.week { margin-bottom: 20px; padding: 15px; background: #e9f5ff; border-left: 5px solid #007BFF; border-radius: 8px; }
+
+// === frontend/script.js === const form = document.getElementById('form-semana'); const plano = document.getElementById('study-plan'); const API_URL = 'https://seu-backend.onrender.com/api/planos'; // Substitua pela URL real
+
+async function carregarPlano() { const res = await fetch(API_URL); const semanas = await res.json(); plano.innerHTML = ''; semanas.forEach((semana) => { const div = document.createElement('div'); div.className = 'week'; div.innerHTML = <h2>${semana.titulo}</h2> <ul>${semana.topicos.map(t =><li>${t}</li>).join('')}</ul> ; plano.appendChild(div); }); }
+
+form.addEventListener('submit', async function (e) { e.preventDefault(); const titulo = document.getElementById('tituloSemana').value.trim(); const topicosTexto = document.getElementById('topicos').value.trim();
+
+if (titulo && topicosTexto) { const topicos = topicosTexto.split(',').map(t => t.trim()); await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ titulo, topicos }) }); form.reset(); carregarPlano(); } });
+
+carregarPlano();
+
